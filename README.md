@@ -24,36 +24,6 @@ This script provides various functionalities related to the SNCF WiFi inOui serv
 - **-google**: Uses Google DNS servers as the DNS servers.
 - **-nextdns**: Sets DNS to go through [NextDNS](https://my.nextdns.io) only.
 
-## Functions:
-
-### 1. `accept_connection()`
-
-Activates the SNCF WiFi connection by accepting the portal conditions.
-
-### 2. `connection_status()`
-
-Retrieves the WiFi connection status, including granted bandwidth, remaining data, consumed data, and next reset time.
-
-### 3. `get_wifi_statistics()`
-
-Retrieves WiFi statistics such as quality and the number of devices connected.
-
-### 4. `get_train_gps()`
-
-Retrieves the train's current speed and altitude.
-
-### 5. `get_trip_percentage()`
-
-Calculates the percentage of the trip completed based on the traveled distance.
-
-### 6. `check_delayed_stops()`
-
-Checks for delayed stops during the trip and displays their duration.
-
-### 7. `get_bar_attendance()`
-
-Checks if the bar queue is empty or not. (not very accurate)
-
 ## Example Usage:
 
 ```bash
