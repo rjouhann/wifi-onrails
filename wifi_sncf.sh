@@ -17,18 +17,35 @@ usage() {
 # Function to set DNS servers
 set_dns() {
     local servers=$1
-    networksetup -setdnsservers Wi-Fi $servers
+    if [[ $(uname) == "Linux" ]]; then
+        nmcli device modify wlan0 ipv4.dns "$servers"
+    elif [[ $(uname) == "Darwin" ]]; then
+        networksetup -setdnsservers Wi-Fi "$servers"
+    fi
 }
 
 # Function to get current DNS servers
 get_dns() {
     echo "DNS config:"
-    networksetup -getdnsservers Wi-Fi
+    if [[ $(uname) == "Linux" ]]; then
+        nmcli device show wlan0 | grep IP4.DNS
+    elif [[ $(uname) == "Darwin" ]]; then
+        networksetup -getdnsservers Wi-Fi
+    fi
     # Try to ping google.com
     if ping -c 3 google.com >/dev/null 2>&1; then
         echo -e "\nPinging google.com: OK"
     else
         echo -e "\nPinging google.com: NOK"
+    fi
+}
+
+# Function to get default gateway
+get_gateway() {
+    if [[ $(uname) == "Linux" ]]; then
+        ip route | awk '/default/ { print $3 }'
+    elif [[ $(uname) == "Darwin" ]]; then
+        netstat -rn | grep default | grep -E 'en[0-9]' | awk '{ print $2 }' | grep -oE "\b([0-9]{1,3}\.){3}[0-9]{1,3}\b"
     fi
 }
 
@@ -208,7 +225,7 @@ case "$1" in
         usage
         ;;
     -sncf)
-        gw=$(netstat -rn | grep default | grep en0 |  awk '{ print $2 }')
+        gw=$(get_gateway)
         set_dns "$gw"
         get_dns
         sleep 5

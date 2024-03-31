@@ -2,7 +2,7 @@
 
 This script provides various functionalities related to the SNCF WiFi inOui service, allowing users to manage their connection, check trip details, and configure DNS settings.
 
-⚠️ Compatibility: macOS only
+⚠️ Compatibility: macOS and Linux only
 
 ## Prerequisites
 
