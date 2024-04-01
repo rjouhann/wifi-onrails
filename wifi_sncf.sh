@@ -18,7 +18,7 @@ usage() {
 set_dns() {
     local servers=$1
     if [[ $(uname) == "Linux" ]]; then
-        nmcli device modify wlan0 ipv4.dns "$servers"
+        nmcli device modify wlan0 ipv4.dns "$servers" # TBC
     elif [[ $(uname) == "Darwin" ]]; then
         networksetup -setdnsservers Wi-Fi "$servers"
     fi
@@ -28,7 +28,7 @@ set_dns() {
 get_dns() {
     echo "DNS config:"
     if [[ $(uname) == "Linux" ]]; then
-        nmcli device show wlan0 | grep IP4.DNS
+        nmcli device show wlan0 | grep IP4.DNS # TBC
     elif [[ $(uname) == "Darwin" ]]; then
         networksetup -getdnsservers Wi-Fi
     fi
@@ -43,7 +43,7 @@ get_dns() {
 # Function to get default gateway
 get_gateway() {
     if [[ $(uname) == "Linux" ]]; then
-        ip route | awk '/default/ { print $3 }'
+        ip route | awk '/default/ { print $3 }' # TBC
     elif [[ $(uname) == "Darwin" ]]; then
         netstat -rn | grep default | grep -E 'en[0-9]' | awk '{ print $2 }' | grep -oE "\b([0-9]{1,3}\.){3}[0-9]{1,3}\b"
     fi
@@ -73,9 +73,11 @@ accept_connection() {
 
         # Check if response is not empty
         if [ -n "$response" ]; then
-            echo "Connection activated."
+            status=$(echo "$response" | jq -r '.travel.status.active')
+            status_description=$(echo "$response" | jq -r '.travel.status.status_description')
+            echo -e "Connection activated. Status: $status ($status_description)\n"
         else
-            echo "Error: No response received."
+            echo -e "Error: No response received.\n"
         fi
     fi
 }
@@ -103,7 +105,7 @@ connection_status() {
         consumed_data_MB=$(echo "scale=2; $consumed_data / 1024" | bc)
 
         # Convert next_reset timestamp to human-readable format
-        next_reset=$(echo "$response" | jq -r '.travel.status.next_reset' | awk '{print int($1/1000)}' | xargs -I{} date -r {} +"%Y/%M/%D %H:%M:%S")
+        next_reset=$(echo "$response" | jq -r '.next_reset' | awk '{print int($1/1000)}' | xargs -I{} date -r {} +"%Y-%m-%d %H:%M:%S")
 
         # Display values
         echo -e "\nStatus: $status ($status_description)"
@@ -227,8 +229,8 @@ case "$1" in
     -sncf)
         gw=$(get_gateway)
         set_dns "$gw"
-        get_dns
         sleep 5
+        get_dns
         accept_connection
         get_wifi_statistics
         get_train_gps
