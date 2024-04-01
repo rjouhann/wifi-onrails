@@ -1,6 +1,5 @@
 #!/bin/bash
-
-# Thanks to https://vulpinecitrus.info/blog/the-sncf-wifi-api
+# set -x
 
 # Function to display usage
 usage() {
@@ -8,7 +7,8 @@ usage() {
     echo "Options:"
     echo "  (no option)      Show current DNS configuration and ping google.com"
     echo "  -h               Show this help message"
-    echo "  -sncf            Use Wifi gateway as DNS server and get some details about the trip"
+    echo "  -sncf            Use SNCF Wifi gateway as DNS server and get some details about the trip"
+    echo "  -normandie       Use Normandie Wifi gateway as DNS server and get some details about the trip"
     echo "  -google          Use Google DNS servers as DNS servers"
     echo "  -nextdns         Go through NextDNS only"
     exit 1
@@ -51,15 +51,16 @@ get_gateway() {
 
 # Function to accept the sncf portal conditions
 accept_connection() {
+    local type=$1
     # Check the connection status
-    if connection_status; then
+    if connection_status "$type"; then
         echo -e "Connection already activated.\n"
     else
-        response=$(curl -s 'https://wifi.sncf/router/api/connection/activate/auto' \
+        response=$(curl -s "$type/router/api/connection/activate/auto" \
             -H 'Accept-Language: en-US,en;q=0.9' \
             -H 'Connection: keep-alive' \
-            -H 'Origin: https://wifi.sncf' \
-            -H 'Referer: https://wifi.sncf/en/internet/login' \
+            -H "Origin: $type" \
+            -H "Referer: $type/en/internet/login" \
             -H 'Sec-Fetch-Dest: empty' \
             -H 'Sec-Fetch-Mode: cors' \
             -H 'Sec-Fetch-Site: same-origin' \
@@ -84,7 +85,8 @@ accept_connection() {
 
 # Function to get WiFi connection status
 connection_status() {
-    response=$(curl -s 'https://wifi.sncf/router/api/connection/status')
+    local type=$1
+    response=$(curl -s "$type/router/api/connection/status")
     if [ $? -ne 0 ]; then
         echo "Error: Failed to fetch data from the endpoint"
         return 1
@@ -103,6 +105,8 @@ connection_status() {
         granted_bandwidth_MB=$(echo "scale=2; $granted_bandwidth / 1024 / 10" | bc)
         remaining_data_MB=$(echo "scale=2; $remaining_data / 1024" | bc)
         consumed_data_MB=$(echo "scale=2; $consumed_data / 1024" | bc)
+        # Calculate percentage of data remaining
+        data_remaining_percentage=$(echo "scale=2; ($remaining_data / ($remaining_data + $consumed_data)) * 100" | bc)
 
         # Convert next_reset timestamp to human-readable format
         next_reset=$(echo "$response" | jq -r '.next_reset' | awk '{print int($1/1000)}' | xargs -I{} date -r {} +"%Y-%m-%d %H:%M:%S")
@@ -112,6 +116,7 @@ connection_status() {
         echo -e "\nGranted Bandwidth: $granted_bandwidth_MB MB/s"
         echo "Remaining Data: $remaining_data_MB MB"
         echo "Consumed Data: $consumed_data_MB MB"
+        echo "Data Remaining: $data_remaining_percentage%"
         echo -e "Next Reset: $next_reset\n"
         # echo -e "\nRaw:\n$(echo $response | jq .)"
         
@@ -130,7 +135,8 @@ connection_status() {
 
 # Function to get WiFi connection statistics
 get_wifi_statistics() {
-    response=$(curl -sL "https://wifi.sncf/router/api/connection/statistics")
+    local type=$1
+    response=$(curl -sL "$type/router/api/connection/statistics")
     if [ $? -ne 0 ]; then
         echo "Error: Failed to fetch data from the endpoint"
         return
@@ -144,7 +150,8 @@ get_wifi_statistics() {
 
 # Function to get bar attendance
 get_bar_attendance() {
-    response=$(curl -s 'https://wifi.sncf/router/api/bar/attendance')
+    local type=$1
+    response=$(curl -s "$type/router/api/bar/attendance")
     if [ $? -ne 0 ]; then
         echo "Error: Failed to fetch data from the endpoint"
         return
@@ -160,7 +167,8 @@ get_bar_attendance() {
 
 # Function to get train speed and altitude
 get_train_gps() {
-    response=$(curl -s 'https://wifi.sncf/router/api/train/gps')
+    local type=$1
+    response=$(curl -s "$type/router/api/train/gps")
     if [ $? -ne 0 ]; then
         echo "Error: Failed to fetch data from the endpoint"
         return
@@ -177,7 +185,8 @@ get_train_gps() {
 
 # Function to get percentage of the trip
 get_trip_percentage() {
-    response=$(curl -sL "https://wifi.sncf/router/api/train/details")
+    local type=$1
+    response=$(curl -sL "$type/router/api/train/details")
     if [ $? -ne 0 ]; then
         echo "Error: Failed to fetch data from the endpoint"
         return
@@ -191,7 +200,8 @@ get_trip_percentage() {
 
 # Function to check for delayed stops and display their duration
 check_delayed_stops() {
-    response=$(curl -sL "https://wifi.sncf/router/api/train/details")
+    local type=$1
+    response=$(curl -sL "$type/router/api/train/details")
     if [ $? -ne 0 ]; then
         echo "Error: Failed to fetch data from the endpoint"
         return
@@ -199,15 +209,27 @@ check_delayed_stops() {
     delayed_stops=$(echo "$response" | jq -r '.stops[] | select(.isDelayed == true) | "\(.label) is delayed by \(.delay) minutes"')
 
     # Get the theoretical and real arrival dates for the last stop
-    last_stop=$(echo "$response" | jq -r '.stops | last')
-    theoric_date=$(echo "$last_stop" | jq -r '.theoricDate')
-    real_date=$(echo "$last_stop" | jq -r '.realDate')
+    if [ "$type" == "https://wifi.sncf" ]; then
+        last_stop=$(echo "$response" | jq -r '.stops | last')
+        name_stop=$(echo "$last_stop" | jq -r '.name')
+        theoric_date=$(echo "$last_stop" | jq -r '.theoricDate')
+        real_date=$(echo "$last_stop" | jq -r '.realDate')
+    elif [ "$type" == "https://wifi.normandie.fr" ]; then
+        last_stop=$(echo "$response" | jq -r '.stops | last')
+        name_stop=$(echo "$last_stop" | jq -r '.location.name')
+        theoric_date=$(echo "$last_stop" | jq -r '.arrival.date')
+        real_date=$(echo "$last_stop" | jq -r '.arrival.realDate')
+    else
+        echo "Wifi Router unknown"
+    fi
 
     # Remove milliseconds and Z from the dates
     theoric_date=$(echo "${theoric_date}" | sed 's/\(.*\)Z/\1/')
     real_date=$(echo "${real_date}" | sed 's/\(.*\)Z/\1/')
 
-    if [ $(date -jf "%Y-%m-%dT%H:%M:%S" "${theoric_date}" +"%Z" 2>/dev/null) = "CEST" ]; then
+    if [[ $theoric_date == *"+02:00"* || $theoric_date == *"+01:00"* ]]; then
+        ds="+0H"
+    elif [ $(date -jf "%Y-%m-%dT%H:%M:%S" "${theoric_date}" +"%Z" 2>/dev/null) = "CEST" ]; then
         # Central European Summer Time
         ds="+2H"
     else
@@ -219,6 +241,7 @@ check_delayed_stops() {
     theoric_date_local=$(date -jf "%Y-%m-%dT%H:%M:%S" -v $ds "${theoric_date}" +"%H:%M" 2>/dev/null)
     real_date_local=$(date -jf "%Y-%m-%dT%H:%M:%S" -v $ds "${real_date}" +"%H:%M" 2>/dev/null)
 
+    echo "Final destination: ${name_stop}"
     echo "Theoretical Arrival: ${theoric_date_local}"
     echo "Real Arrival: ${real_date_local}"
 
@@ -235,27 +258,43 @@ case "$1" in
         usage
         ;;
     -sncf)
+        type="https://wifi.sncf"
         gw=$(get_gateway)
         set_dns "$gw"
         sleep 5
         get_dns
-        accept_connection
-        get_wifi_statistics
-        get_train_gps
+        accept_connection "$type"
+        get_wifi_statistics "$type"
+        get_train_gps "$type"
         echo
-        get_trip_percentage
-        check_delayed_stops
+        get_trip_percentage "$type"
+        check_delayed_stops "$type"
         echo
-        get_bar_attendance
+        get_bar_attendance "$type"
+        ;;
+    -normandie)
+        type="https://wifi.normandie.fr"
+        gw=$(get_gateway)
+        set_dns "$gw"
+        sleep 3
+        get_dns
+        accept_connection "$type"
+        get_wifi_statistics "$type"
+        get_train_gps "$type"
+        echo
+        get_trip_percentage "$type"
+        check_delayed_stops "$type"
+        echo
+        get_bar_attendance "$type"
         ;;
     -google)
-        set_dns "8.8.8.8 8.8.4.4"
-        sleep 5
+        set_dns 8.8.8.8
+        sleep 3
         get_dns
         ;;
     -nextdns)
         set_dns "127.0.0.1"
-        sleep 5
+        sleep 3
         get_dns
         ;;
     *)

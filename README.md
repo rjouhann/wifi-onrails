@@ -20,7 +20,8 @@ This script provides various functionalities related to the SNCF WiFi inOui serv
 
 - **(no option)**: Displays the current DNS configuration and pings google.com.
 - **-h**: Displays help information.
-- **-sncf**: Uses the WiFi gateway as the DNS server and retrieves trip details.
+- **-sncf**: Uses the SNCF WiFi gateway as the DNS server and retrieves trip details.
+- **-normandie**: Uses the Normandie WiFi gateway as the DNS server and retrieves trip details.
 - **-google**: Uses Google DNS servers as the DNS servers.
 - **-nextdns**: Sets DNS to go through [NextDNS](https://my.nextdns.io) only.
 
@@ -42,6 +43,7 @@ Status: true (identifier has existing grant)
 Granted Bandwidth: 9.76 MB/s
 Remaining Data: 106.15 MB
 Consumed Data: 893.84 MB
+Data Remaining: 10%
 Next Reset: 2024-04-01 11:49:35
 
 Connection already activated.
@@ -53,6 +55,7 @@ Train altitude: 356.63 meters
 
 Trip percentage: 91%
 Number of Stops: 1
+Final destination: Grenoble
 Theoretical Arrival: 13:13
 Real Arrival: 13:18
 Delayed stops: Grenoble is delayed by 5 minutes
