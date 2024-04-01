@@ -207,9 +207,17 @@ check_delayed_stops() {
     theoric_date=$(echo "${theoric_date}" | sed 's/\(.*\)Z/\1/')
     real_date=$(echo "${real_date}" | sed 's/\(.*\)Z/\1/')
 
-    # Convert UTC to Paris time (UTC+1)
-    theoric_date_local=$(date -jf "%Y-%m-%dT%H:%M:%S" -v +1H "${theoric_date}" +"%H:%M" 2>/dev/null)
-    real_date_local=$(date -jf "%Y-%m-%dT%H:%M:%S" -v +1H "${real_date}" +"%H:%M" 2>/dev/null)
+    if [ $(date -jf "%Y-%m-%dT%H:%M:%S" "${theoric_date}" +"%Z" 2>/dev/null) = "CEST" ]; then
+        # Central European Summer Time
+        ds="+2H"
+    else
+        # Central European Time
+        ds="+1H"
+    fi
+
+    # Convert UTC to Paris time
+    theoric_date_local=$(date -jf "%Y-%m-%dT%H:%M:%S" -v $ds "${theoric_date}" +"%H:%M" 2>/dev/null)
+    real_date_local=$(date -jf "%Y-%m-%dT%H:%M:%S" -v $ds "${real_date}" +"%H:%M" 2>/dev/null)
 
     echo "Theoretical Arrival: ${theoric_date_local}"
     echo "Real Arrival: ${real_date_local}"

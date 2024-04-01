@@ -42,7 +42,9 @@ Status: true (identifier has existing grant)
 Granted Bandwidth: 9.76 MB/s
 Remaining Data: 106.15 MB
 Consumed Data: 893.84 MB
-Next Reset: 14:09:09
+Next Reset: 2024-04-01 11:49:35
+
+Connection already activated.
 
 WiFi Quality: 5
 Number of Devices Connected: 126
