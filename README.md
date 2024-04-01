@@ -46,7 +46,7 @@ Next Reset: 2024-04-01 11:49:35
 
 Connection already activated.
 
-WiFi Quality: 5
+WiFi Quality: 5/5
 Number of Devices Connected: 126
 Train speed: 82.598 km/h
 Train altitude: 356.63 meters

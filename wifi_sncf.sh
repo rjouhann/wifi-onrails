@@ -138,7 +138,7 @@ get_wifi_statistics() {
     quality=$(echo "$response" | jq -r '.quality')
     devices=$(echo "$response" | jq -r '.devices')
 
-    echo "WiFi Quality: $quality"
+    echo "WiFi Quality: $quality/5"
     echo "Number of Devices Connected: $devices"
 }
 
