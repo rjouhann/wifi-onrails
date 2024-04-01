@@ -53,7 +53,7 @@ get_gateway() {
 accept_connection() {
     # Check the connection status
     if connection_status; then
-        echo -n "Connection already activated.\n"
+        echo -e "Connection already activated.\n"
     else
         response=$(curl -s 'https://wifi.sncf/router/api/connection/activate/auto' \
             -H 'Accept-Language: en-US,en;q=0.9' \
