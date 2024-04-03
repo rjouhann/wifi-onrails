@@ -106,7 +106,7 @@ connection_status() {
         remaining_data_MB=$(echo "scale=2; $remaining_data / 1024" | bc)
         consumed_data_MB=$(echo "scale=2; $consumed_data / 1024" | bc)
         # Calculate percentage of data remaining
-        data_remaining_percentage=$(echo "scale=1; ($remaining_data / ($remaining_data + $consumed_data)) * 100" | bc)
+        data_remaining_percentage=$(echo "scale=2; ($remaining_data / ($remaining_data + $consumed_data)) * 100" | bc)
 
         # Convert next_reset timestamp to human-readable format
         next_reset=$(echo "$response" | jq -r '.next_reset' | awk '{print int($1/1000)}' | xargs -I{} date -r {} +"%Y-%m-%d %H:%M:%S")
